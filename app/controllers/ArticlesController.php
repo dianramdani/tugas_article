@@ -41,8 +41,8 @@ class ArticlesController extends \BaseController {
 			$sheet->setSize('C2',300,200);
 			$sheet->getStyle('C2')->getAlignment()->setWrapText(true);
 
-            $sheet->row(1, array('ID', 'Title','Content'));
-		    $sheet->row(2, array($article->id,$article->title,$article->content));
+            $sheet->row(1, array('Title','Content','Author'));
+		    $sheet->row(2, array($article->title,$article->content,$article->author));
 		    
 		});
 		
@@ -74,41 +74,45 @@ class ArticlesController extends \BaseController {
             Input::file('import_file')->move($path_file, $filename);
 	    Excel::load($path_file.'/'.$filename, function($reader)
 	    {
-		$results = $reader->all(array('title','content','author','article_id','user'));
-		$data=count($results[0]);
-		$count_comment = count($results[1]);
-		
-		
-		
-		for($a=0;$a<$data;$a++){
-		    $title 		= $results[0][$a]['title'];
-		    $content 	= $results[0][$a]['content'];
-		    $author		= $results[0][$a]['author'];
-		     
-		    $article 			= new Article;
-		    $article->title 	= $title;
-		    $article->content 	= $content;
-		    $article->author 	= $author;
-				    
-		    $article->save();
-		 }
+	    	$results = $reader->all(array('title','content','author','comment','user'));
+	    	
+	    	$data = count($results[0]);
+	    	$count_comment = count($results[1]);
 
-		 for($x=0;$x<$count_comment;$x++){
-		 	$article_id = $results[1][$x]['article_id'];
-		 	$content 	= $results[1][$x]['content'];
-		 	$user 		= $results[1][$x]['user'];
+	    	for($a=0;$a<$data;$a++){
+	    		
+			    $title 		= $results[0][$a]['title'];
+			    $content	= $results[0][$a]['content'];
+			    $author 	= $results[0][$a]['author'];
 
-		 	$comment 				= new Comment();
-		 	$comment->article_id 	= $article_id;
-		 	$comment->content 		= $content;
-		 	$comment->user 			= $user;
+			     
+			    $article 			= new Article;
+			    $article->title 	= $title;
+			    $article->content 	= $content;
+			    $article->author 	= $author;
+			    
+					    
+			    $article->save();
+			    
 
-		 	$comment->save(); 
+	    	}
+	    	    	
+	    	for($x=0;$x<$count_comment;$x++){
 
-		 }
+			 	
+			 	$article_id			= $article->id;
+			 	$comment_article 	= $results[1][$x]['comment'];
+			 	$user 				= $results[1][$x]['user'];
+			 	
+			 	
+			 	$comment 				= new Comment();
+			 	$comment->article_id 	= $article_id;
+			 	$comment->content 		= $comment_article;
+			 	$comment->user 			= $user;
 
-		
-	    });
+			 	$comment->save();
+		 	}
+		});
 	    Session::flash('notice','Success import article');
             return Redirect::to('articles');
 	}
@@ -124,6 +128,7 @@ class ArticlesController extends \BaseController {
 	    {
 		$excel->sheet('article', function($sheet) use($article,$comments){
 
+			$sheet->mergeCells('A3:C3');
 			$sheet->setSize('C2',50);
 			$sheet->getStyle('C2')->getAlignment()->setWrapText(true);
 
